@@ -17,3 +17,4 @@ console.log(`Max: ${Math.max(...arr)}`);
 console.log(`Min: ${Math.min(...arr)}`);
 console.log(`Average: ${average / arr.length}`);
 
+
