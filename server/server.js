@@ -2,7 +2,7 @@ const http = require("http");
 const url = require("url");
 const StringDecoder = require("string_decoder").StringDecoder;
 const router = require("./router.js");
-const handlers = require("./handler.js");
+const handlers = require("../endpoints/handler");
 
 const httpServer = http.createServer((req,res) => {
     const requestedUrl = url.parse(req.url,true);

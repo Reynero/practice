@@ -29,11 +29,10 @@ const handlers = {
             name: "Reynero",
             lastname: "Torrico",
             age: 26,
-            speak(){
-                alert("Reynero says Hello");
-            }
+            
         }
         callback(200, user)
-    }
+    },
+
 };
 module.exports = handlers;

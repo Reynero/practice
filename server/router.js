@@ -1,4 +1,4 @@
-const handlers = require("./handler");
+const handlers = require("../endpoints/handler");
 const router = {
     ping : handlers.ping,
     hello : handlers.hello,
