@@ -4,7 +4,7 @@ const StringDecoder = require("string_decoder").StringDecoder;
 const router = require("./router.js");
 const handlers = require("../endpoints/handler");
 
-const httpServer = http.createServer((req,res) => {
+const startingServer = (req, res) => {
     const requestedUrl = url.parse(req.url,true);
     //this is storing the url as an object into requestedUrl
     const path = requestedUrl.pathname;
@@ -23,11 +23,11 @@ const httpServer = http.createServer((req,res) => {
     let buffer = "";
     req.on("data",data=>{
         //.on just binds an event to the object
-        buffer = decoder.write(data);
+        buffer += decoder.write(data);
         //write function writes the data already decoded
     });
     req.on("end",()=>{
-        buffer = decoder.end();
+        buffer += decoder.end();
         //Returns what remains of the input stored in the internal buffer
         const chosenHandler = typeof(router[trimedPath]) !== "undefined"?router[trimedPath]:handlers.notFound;
         const data = {
@@ -35,7 +35,7 @@ const httpServer = http.createServer((req,res) => {
             queryStringObj,
             method,
             header,
-            payload: buffer
+            payload: JSON.stringify(buffer)
         }
         chosenHandler(data,(statusCode, payload)=>{
             statusCode = typeof(statusCode) === "number"?statusCode:200;
@@ -49,6 +49,10 @@ const httpServer = http.createServer((req,res) => {
             res.end(payloadString);
         });
     });
+};
+
+const httpServer = http.createServer((req,res) => {
+    startingServer(req, res);
 });
 
 const initHTTP = {

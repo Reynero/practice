@@ -1,8 +1,31 @@
+const users = require("../endpoints/users.js");
+const products = require("../endpoints/products.js");
+const purchases = require("../endpoints/purchases");
+
+const obtainHandler = ( moduleHandler, acceptableMethods ) => {
+    return( ( data, callback ) => {
+        if ( acceptableMethods.indexOf( data.method ) > -1 ) {
+            moduleHandler[ data.method ]( data, callback );
+        } else {
+            callback ( 405 );
+        }    
+    });
+};
+
 // Define a request router
 const handlers = {
+    //Users
+    users: obtainHandler(users, ["options", "get", "put"]),
+    //product
+    products: obtainHandler(products, ["options", "get", "put"]),
+    //purchases
+    purchases: obtainHandler(purchases, ["options", "get", "put"]),
     // Ping handler
     ping :  ( data, callback ) => {
-        callback( 200 );
+        const responseMessage = {
+            message : 'PONG'
+        };
+        callback( 200, responseMessage );
     },
     // Hello handler
     hello :  ( data, callback ) => {
@@ -24,7 +47,7 @@ const handlers = {
         }
         callback(200, responseMessage);
     },
-    users: (data, callback) => {
+    person: (data, callback) => {
         const user = {
             name: "Reynero",
             lastname: "Torrico",
