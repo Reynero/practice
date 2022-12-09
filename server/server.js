@@ -1,58 +1,82 @@
-const http = require("http");
-const url = require("url");
-const StringDecoder = require("string_decoder").StringDecoder;
-const router = require("./router.js");
-const handlers = require("../endpoints/handler");
+// Dependencies
+const http = require( 'http' );
+const url =  require( 'url' );
+const StringDecoder = require( 'string_decoder' ).StringDecoder;
+const handlers = require( '../routes/handlers' );
+const router = require( '../routes/router' );
+const util = require( 'util' );
+const debug = util.debuglog( 'server' );
+const utils = require( '../lib/utils' );
 
-const startingServer = (req, res) => {
-    const requestedUrl = url.parse(req.url,true);
-    //this is storing the url as an object into requestedUrl
-    const path = requestedUrl.pathname;
-    //now from that object we are extracting the path 
-    const trimedPath = path.replace(/^\/+|\/+$/g,"");
-    //here we are cleaning the URL
-    const queryStringObj = requestedUrl.query;
-    //here we are storing the rest of the url after the ? sign
+const httpPort = 3200;
+
+// Starting HTTP server
+const startingServer = ( req, res ) => {
+    // Get the URL and parse it
+    const parsedUrl = url.parse( req.url, true );
+
+    // Get the path
+    const path = parsedUrl.pathname;
+    const trimedPath = path.replace( /^\/+|\/+$/g, '' );
+
+    // Get the query string as an object
+    const queryStringObject = parsedUrl.query;
+
+    // Get HTTP method
     const method = req.method.toLowerCase();
-    //stores the requested method
-    const header = req.headers;
-    //inside headers there is the additional info from the client, server, from the requested page, ect. 
-    //this depends on the side that is requesting 
-    const decoder = new StringDecoder("utf-8");
-    //this is just decoding everything to utf-8 format
-    let buffer = "";
-    req.on("data",data=>{
-        //.on just binds an event to the object
-        buffer += decoder.write(data);
-        //write function writes the data already decoded
-    });
-    req.on("end",()=>{
+
+    // Get the headers as an object
+    const headers = req.headers;
+
+    // Get the payload
+    const decoder = new StringDecoder( 'utf-8' );
+    let buffer = '';
+    req.on( 'data', ( ( data ) => {
+        buffer += decoder.write( data );
+    }));
+    req.on( 'end', ( () => {
         buffer += decoder.end();
-        //Returns what remains of the input stored in the internal buffer
-        const chosenHandler = typeof(router[trimedPath]) !== "undefined"?router[trimedPath]:handlers.notFound;
+
+        // Chose the handler this request should go to
+        const chosenHandler = typeof( router[trimedPath] ) !== 'undefined' ? router[ trimedPath ] : handlers.notFound;
+
+        // Construct the data objectto send to the handler
         const data = {
             trimedPath,
-            queryStringObj,
+            queryStringObject,
             method,
-            header,
-            payload: JSON.stringify(buffer)
-        }
-        chosenHandler(data,(statusCode, payload)=>{
-            statusCode = typeof(statusCode) === "number"?statusCode:200;
-            payload = typeof(payload) === "object"?payload:{};
-            //consists of HTTP protocol information such as headers, a URL, body content, and version and status information
-            const payloadString = JSON.stringify(payload);
-            //here we are converting the value into a JSON (js object notation)
-            res.setHeader("Content-Type","application/json");
-            res.writeHead(statusCode);
-            //here we are writing the response of the server in the webpage
-            res.end(payloadString);
-        });
-    });
+            headers,
+            payload : utils.parseJsonToObject( buffer )
+        };
+        
+        chosenHandler( data, ( statusCode, payload ) => {
+            // Use the status code called back by the handler or default to 200
+            statusCode = typeof( statusCode ) === 'number' ? statusCode : 200;
+
+            // Use de payload called back by the handler or defalut to an empty object
+            payload = typeof( payload ) === 'object' ? payload : {};
+
+            // Convert the payload to a string
+            const payloadString = JSON.stringify( payload );
+
+            // Return the response
+            res.setHeader( 'Content-Type' , 'application/json' );
+            res.writeHead( statusCode );
+            res.end( payloadString );
+
+            // If the response is 200 print cyan otherwise print red
+            if ( statusCode === 200 || statusCode ===201 ) {
+                debug( '\x1b[36m%s\x1b[0m', method.toUpperCase() + '/' + trimedPath + ' ' + statusCode );
+            } else {
+                debug( '\x1b[31m%s\x1b[0m', method.toUpperCase() + '/' + trimedPath + ' ' + statusCode );
+            }
+        } );
+    } ) );
 };
 
-const httpServer = http.createServer((req,res) => {
-    startingServer(req, res);
+// Instantiate the HTTP server
+const httpServer = http.createServer( ( req, res ) => {
+    startingServer( req, res );
 });
 
 const initHTTP = {
